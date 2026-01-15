@@ -1,0 +1,1210 @@
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math';
+
+void main() => runApp(const FitIntelEnterpriseApp());
+
+// --- CORE APPLICATION ---
+class FitIntelEnterpriseApp extends StatelessWidget {
+  const FitIntelEnterpriseApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'FitIntel Pro',
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        primaryColor: const Color(0xFFEF4444),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFEF4444),
+          secondary: Color(0xFF38BDF8),
+          surface: Color(0xFF1E293B),
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        ),
+      ),
+      home: const LanguageSelectionPage(),
+    );
+  }
+}
+
+// --- 1. SPLASH SCREEN ---
+
+ class LocaleData {
+  static String selectedLanguage = 'en'; // Defaults to English
+
+  static const Map<String, Map<String, String>> data = {
+    'en': {
+      'title': 'FITINTEL PRO', 'home': 'Home', 'diet': 'Diet', 
+      'workout': 'Workout', 'coaches': 'Coaches', 'shop': 'Shop', 
+      'cart': 'Cart', 'orders': 'Orders'
+    },
+    'te': { // Telugu
+      'title': 'ఫిట్‌ఇంటెల్ ప్రో', 'home': 'హోమ్', 'diet': 'ఆహారం', 
+      'workout': 'వ్యాయామం', 'coaches': 'శిక్షకులు', 'shop': 'షాప్', 
+      'cart': 'కార్ట్', 'orders': 'ఆర్డర్లు'
+    },
+    // ... add other languages here
+  };
+
+  static String t(String key) => data[selectedLanguage]?[key] ?? data['en']![key]!;
+}
+
+
+class LanguageSelectionPage extends StatelessWidget {
+  const LanguageSelectionPage({super.key});
+
+  final List<Map<String, String>> languages = const [
+    {'code': 'en', 'name': 'English'},
+    {'code': 'te', 'name': 'తెలుగు (Telugu)'},
+    {'code': 'hi', 'name': 'हिन्दी (Hindi)'},
+    {'code': 'mr', 'name': 'मराठी (Marathi)'},
+    {'code': 'ta', 'name': 'தமிழ் (Tamil)'},
+    {'code': 'kn', 'name': 'ಕನ್ನಡ (Kannada)'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.translate, size: 80, color: Colors.redAccent),
+            const SizedBox(height: 20),
+            const Text(
+              "CHOOSE YOUR LANGUAGE",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+            ),
+            const Text("మీ భాషను ఎంచుకోండి / अपनी भाषा चुनें", style: TextStyle(color: Colors.white54)),
+            const SizedBox(height: 40),
+            Expanded(
+              child: ListView.builder(
+                itemCount: languages.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      title: Text(languages[index]['name']!, style: const TextStyle(fontSize: 18)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        // Set the global language
+                        LocaleData.selectedLanguage = languages[index]['code']!;
+                        // Move to the Logo/Splash screen then Onboarding
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (c) => const LogoSplashScreen()),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class LogoSplashScreen extends StatefulWidget {
+  const LogoSplashScreen({super.key});
+  @override
+  _LogoSplashScreenState createState() => _LogoSplashScreenState();
+}
+
+class _LogoSplashScreenState extends State<LogoSplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  @override
+   void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+    Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OnboardingController()));
+      }
+    });
+  }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.bolt_rounded, size: 120, color: Color(0xFFEF4444)),
+              const SizedBox(height: 20),
+              const Text("FITINTEL", style: TextStyle(fontSize: 52, fontWeight: FontWeight.w900, letterSpacing: 10)),
+              Container(height: 2, width: 100, color: Colors.red),
+              const SizedBox(height: 10),
+              const Text("EVOLVE YOUR LIMITS", style: TextStyle(color: Colors.white54, fontSize: 14, letterSpacing: 4)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- 2. MULTI-STEP ONBOARDING ---
+class OnboardingController extends StatefulWidget {
+  const OnboardingController({super.key});
+  @override
+  _OnboardingControllerState createState() => _OnboardingControllerState();
+}
+
+class _OnboardingControllerState extends State<OnboardingController> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  int _step = 0;
+  double _age = 25;
+  double _weight = 70;
+  String _goal = "Muscle Gain";
+
+  void _next() => setState(() => _step++);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0F172A), Color(0xFF1E293B)])
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            child: _buildStepContent(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepContent() {
+    switch (_step) {
+      case 0:
+        return Column(key: const ValueKey(0), mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Text("Welcome to the Elite", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 40),
+          TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: "Full Name", border: OutlineInputBorder())),
+          const SizedBox(height: 20),
+          TextField(controller: _phoneCtrl, decoration: const InputDecoration(labelText: "Contact Number", border: OutlineInputBorder()), keyboardType: TextInputType.phone),
+          const SizedBox(height: 40),
+          ElevatedButton(onPressed: _next, style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)), child: const Text("CONTINUE")),
+        ]);
+      case 1:
+        return Column(key: const ValueKey(1), mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Text("Basic Metrics", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 40),
+          Text("Age: ${_age.toInt()}", style: const TextStyle(fontSize: 22, color: Colors.redAccent)),
+          Slider(value: _age, min: 10, max: 100, onChanged: (v) => setState(() => _age = v)),
+          const SizedBox(height: 20),
+          Text("Weight: ${_weight.toInt()} kg", style: const TextStyle(fontSize: 22, color: Colors.blueAccent)),
+          Slider(value: _weight, min: 30, max: 200, onChanged: (v) => setState(() => _weight = v)),
+          const SizedBox(height: 40),
+          ElevatedButton(onPressed: _next, child: const Text("NEXT")),
+        ]);
+      default:
+        return Column(key: const ValueKey(2), mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Text("Your Primary Goal", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 30),
+          ...["Weight Loss", "Muscle Gain", "Athletic Performance", "Yoga & Flexibility"].map((g) => RadioListTile(
+            title: Text(g), value: g, groupValue: _goal, onChanged: (v) => setState(() => _goal = v!),
+          )),
+          const SizedBox(height: 40),
+          ElevatedButton(onPressed: () {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => MainNavigation(
+              name: _nameCtrl.text.isEmpty ? "User" : _nameCtrl.text, 
+              age: _age.toInt(), 
+              goal: _goal, 
+              weight: _weight.toInt()
+            )));
+          }, child: const Text("LAUNCH DASHBOARD")),
+        ]);
+    }
+  }
+}
+
+// --- 3. MAIN NAVIGATION CONTROLLER ---
+class MainNavigation extends StatefulWidget {
+  final String name, goal;
+  final int age, weight;
+  const MainNavigation({super.key, required this.name, required this.age, required this.goal, required this.weight});
+  @override
+  _MainNavigationState createState() => _MainNavigationState();
+}
+
+class _MainNavigationState extends State<MainNavigation> {
+  int _currentIndex = 0;
+  List<Map<String, dynamic>> cart = [];
+  List<Map<String, dynamic>> orders = [
+    {"n": "Old Whey Protein", "p": 5400, "prog": 1.0, "status": "Delivered", "date": "10 Jan 2026"},
+  ];
+  List<Map<String, String>> chatHistory = [{"bot": "I am FitBot. Ask me about your diet, workouts,orders or coaches."}];
+
+  void _showChat() {
+    final TextEditingController _msg = TextEditingController();
+    showModalBottomSheet(
+      context: context, 
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E293B),
+      builder: (ctx) => StatefulBuilder(builder: (sCtx, setModalState) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(sCtx).viewInsets.bottom),
+        child: Container(
+          height: 500, padding: const EdgeInsets.all(20),
+          child: Column(children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text("FitBot AI Assistant", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close))
+            ]),
+            const Divider(),
+            Expanded(child: ListView.builder(itemCount: chatHistory.length, itemBuilder: (c, i) {
+              final m = chatHistory[i];
+              bool isUser = m.containsKey("user");
+              return Align(
+                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.all(12), margin: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(color: isUser ? Colors.redAccent : Colors.white12, borderRadius: BorderRadius.circular(15)),
+                  child: Text(isUser ? m["user"]! : m["bot"]!, style: const TextStyle(fontSize: 15)),
+                ),
+              );
+            })),
+            TextField(controller: _msg, decoration: InputDecoration(
+              hintText: "Type your fitness question...",
+              suffixIcon: IconButton(icon: const Icon(Icons.send, color: Colors.blue), onPressed: () {
+                if (_msg.text.isNotEmpty) {
+                  setModalState(() {
+                    String input = _msg.text.toLowerCase();
+                    chatHistory.add({"user": _msg.text});
+                    
+                    String response = "FitBot: I'm not sure about that. Try asking about your calories, water, shop items, or yoga!";
+
+                    if (input.contains("water") || input.contains("drink") || input.contains("hydrate")) {
+                      response = "FitBot: Hydration is key for ${widget.goal}. Since you weigh ${widget.weight}kg, aim for ${ (widget.weight * 0.04).toStringAsFixed(1) } liters daily.";
+                    } 
+                    else if (input.contains("calorie") || input.contains("eat") || input.contains("diet") || input.contains("food")) {
+                      int calBase = widget.goal == "Muscle Gain" ? 2800 : 1800;
+                      response = "FitBot: For ${widget.goal}, your daily target should be around $calBase kcal. Check the 'Diet' tab for your 7-day meal plan!";
+                    }
+                    else if (input.contains("protein") || input.contains("supplement") || input.contains("whey") || input.contains("creatine")) {
+                      response = "FitBot: To support your ${widget.goal} goal, aim for ${ (widget.weight * 2).toInt() }g of protein. You can find high-quality supplements in our Store tab.";
+                    }
+                    else if (input.contains("workout") || input.contains("exercise") || input.contains("gym") || input.contains("train")) {
+                      response = "FitBot: Consistency is everything. Start with the daily challenge on your dashboard today!";
+                    }
+                    else if (input.contains("run") || input.contains("cardio") || input.contains("heart")) {
+                      response = "FitBot: Your target heart rate during cardio should be around ${220 - widget.age} BPM. Try a 20-minute jog.";
+                    }
+                    else if (input.contains("yoga") || input.contains("stretch") || input.contains("flexib")) {
+                      response = "FitBot: Since your goal involves ${widget.goal}, yoga twice a week will significantly improve your recovery and joint health.";
+                    }
+                    else if (input.contains("shop") || input.contains("buy") || input.contains("store") || input.contains("product")) {
+                      response = "FitBot: You can browse 20+ premium products in our Shop tab. Let me know if you need a recommendation!";
+                    }
+                    else if (input.contains("order") || input.contains("track") || input.contains("delivery") || input.contains("status")) {
+                      response = "FitBot: You can track your active deliveries in the 'Orders' tab. Currently, orders take 3-5 days.";
+                    }
+                    else if (input.contains("hello") || input.contains("hi") || input.contains("hey")) {
+                      response = "FitBot: Hello ${widget.name}! I'm your FitIntel assistant. How can I help you reach your goal of ${widget.goal}?";
+                    }
+                    
+                    chatHistory.add({"bot": response});
+                    _msg.clear();
+                  });
+                }
+              }),
+            )),
+          ]),
+        ),
+      )),
+    );
+  }
+  
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      DashboardPage(name: widget.name, goal: widget.goal, age: widget.age),
+      const WeeklyDietPage(),
+      const WeeklyWorkoutPage(),
+      const CoachContactsPage(),
+           ShopPage(onAddToCart: (item) => setState(() => cart.add(item))),
+      CartPage(cart: cart, onPay: (mode) {
+        setState(() {
+          for (var i in cart) { 
+            orders.add({
+              ...i, 
+              "prog": 0.2, 
+              "status": "Processing", 
+              "date": "11 Jan 2026",
+              "mode": mode
+            }); 
+          }
+          cart.clear();
+          _currentIndex = 4;
+        });
+      }),
+      OrdersPage(orders: orders),
+    ];
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("FITINTEL PRO"),
+        centerTitle: true,
+        actions: [
+          // THE PROFILE BUTTON
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined, color: Colors.redAccent, size: 30),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfilePage(
+                    name: widget.name, 
+                    goal: widget.goal, 
+                    age: widget.age,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
+      body: pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.redAccent,
+        unselectedItemColor: Colors.white54,
+        onTap: (i) => setState(() => _currentIndex = i),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.restaurant), label: "Diet"),
+          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: "Workout"),
+          BottomNavigationBarItem(icon: Icon(Icons.contact_phone), label: "Coaches"),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: "Shop"),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), label: "Cart"),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: "Orders"),
+        ],
+      ),
+   floatingActionButton: FloatingActionButton(
+        onPressed: _showChat,
+        backgroundColor: Colors.blueAccent,
+        child: const Icon(Icons.chat_bubble_outline),
+      ),
+    );
+  }
+} 
+// --- FINAL SECTION: USER PROFILE ---
+class ProfilePage extends StatelessWidget {
+  final String name, goal;
+  final int age;
+  const ProfilePage({super.key, required this.name, required this.goal, required this.age});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("USER PROFILE")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const CircleAvatar(radius: 60, backgroundColor: Colors.redAccent, child: Icon(Icons.person, size: 60)),
+            const SizedBox(height: 20),
+            Text(name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+            
+            // --- NEW STREAK OPTION ---
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.orangeAccent)),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.local_fire_department, color: Colors.orangeAccent, size: 30),
+                  SizedBox(width: 10),
+                  Text("7 DAY STREAK!", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            _buildProfileTile(Icons.track_changes, "Current Goal", goal),
+            _buildProfileTile(Icons.cake, "User Age", "$age Years"),
+            
+            // Link to Leaderboard
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.leaderboard, color: Colors.blueAccent),
+                title: const Text("View Global Rankings"),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const LeaderboardPage())),
+              ),
+            ),
+
+            const SizedBox(height: 40),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent.withOpacity(0.1), minimumSize: const Size(double.infinity, 55)),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("BACK TO DASHBOARD", style: TextStyle(color: Colors.redAccent)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileTile(IconData icon, String label, String value) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 15),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.redAccent),
+        title: Text(label, style: const TextStyle(fontSize: 14, color: Colors.white54)),
+        subtitle: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+      ),
+    );
+  }
+}
+// --- 4. DASHBOARD PAGE (WITH HEALTH ALERTS) ---
+class DashboardPage extends StatefulWidget {
+  final String name, goal;
+  final int age;
+  const DashboardPage({super.key, required this.name, required this.goal, required this.age});
+  @override
+  _DashboardPageState createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  int _water = 0;
+  int _calories = 1450;
+  int _sets = 0;
+  bool _workoutMode = false;
+  late Timer _heartTimer;
+  int _bpm = 72;
+
+  @override
+  void initState() {
+    super.initState();
+    _heartTimer = Timer.periodic(const Duration(seconds: 2), (t) {
+      if (mounted) {
+        setState(() {
+          _bpm = 70 + Random().nextInt(_workoutMode ? 100 : 15);
+          _calories += _workoutMode ? 5 : 1;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() { _heartTimer.cancel(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    int maxSafeHeartRate = 220 - widget.age;
+    bool highBpmAlert = _bpm > (maxSafeHeartRate * 0.85);
+
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Header
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text("HELLO, ${widget.name.toUpperCase()}", style: const TextStyle(fontSize: 14, color: Colors.white54, letterSpacing: 2)),
+                const Text("Elite Dashboard", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              ]),
+              const CircleAvatar(radius: 25, backgroundColor: Colors.redAccent, child: Icon(Icons.person, color: Colors.white))
+            ]),
+            const SizedBox(height: 20),
+
+            // --- HEALTH ALERTS SECTION ---
+            if (highBpmAlert || _water < 2) 
+              _buildHealthAlertSection(highBpmAlert),
+
+            const SizedBox(height: 20),
+            _buildMetricsGrid(),
+            const SizedBox(height: 30),
+            _buildWorkoutPanel(),
+            const SizedBox(height: 30),
+            const Text("DAILY CHALLENGES", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+            _challengeCard("Pushup King", "Complete 50 reps", 0.4),
+            _challengeCard("Hydration Master", "Drink 8 glasses", 0.7),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthAlertSection(bool highBpm) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.redAccent)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+          SizedBox(width: 10),
+          Text("HEALTH CRITICAL ALERTS", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        ]),
+        const SizedBox(height: 10),
+        if (highBpm) const Text("• Elevated Heart Rate: Slow down your intensity immediately.", style: TextStyle(fontSize: 13)),
+        if (_water < 2) const Text("• Dehydration Risk: You haven't logged enough water today.", style: TextStyle(fontSize: 13)),
+      ]),
+    );
+  }
+
+  Widget _buildMetricsGrid() {
+    return GridView.count(
+      shrinkWrap: true, crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _metricTile("Heart Rate", "$_bpm BPM", Icons.favorite, _bpm > 140 ? Colors.red : Colors.pink),
+        _metricTile("Water", "$_water/8 Glasses", Icons.water_drop, Colors.blue, action: () => setState(() => _water++)),
+        _metricTile("Energy", "$_calories kcal", Icons.bolt, Colors.orange),
+        _metricTile("Activity", "45 mins", Icons.timer, Colors.green),
+      ],
+    );
+  }
+
+  Widget _metricTile(String t, String v, IconData i, Color c, {VoidCallback? action}) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(i, color: c, size: 30),
+        const SizedBox(height: 10),
+        Text(v, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(t, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        if(action != null) IconButton(onPressed: action, icon: const Icon(Icons.add_circle_outline, size: 20, color: Colors.blueAccent))
+      ]),
+    );
+  }
+
+  Widget _buildWorkoutPanel() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: _workoutMode ? [Colors.redAccent, Colors.deepOrange] : [Colors.indigo, Colors.blueAccent]),
+        borderRadius: BorderRadius.circular(25)
+      ),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_workoutMode ? "WORKOUT ACTIVE" : "READY TO SWEAT?", style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text("Sets Completed: $_sets", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        ])),
+        IconButton(icon: Icon(_workoutMode ? Icons.pause_circle_filled : Icons.play_circle_filled, size: 50), onPressed: () => setState(() => _workoutMode = !_workoutMode)),
+        if(_workoutMode) IconButton(icon: const Icon(Icons.add_box, size: 40), onPressed: () => setState(() => _sets++))
+      ]),
+    );
+  }
+
+  Widget _challengeCard(String t, String s, double p) {
+    return Card(
+      margin: const EdgeInsets.only(top: 15),
+      child: ListTile(
+        title: Text(t), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(s), const SizedBox(height: 5), LinearProgressIndicator(value: p, backgroundColor: Colors.white10)
+        ]),
+        trailing: const Icon(Icons.military_tech, color: Colors.amber),
+      ),
+    );
+  }
+}
+
+// --- 5. DETAILED 7-DAY DIET PAGE ---
+class WeeklyDietPage extends StatelessWidget {
+  const WeeklyDietPage({super.key});
+
+  static const List<Map<String, dynamic>> fullMealPlan = [
+    {
+      "day": "Monday",
+      "meals": [
+        {"t": "Breakfast", "m": "Oatmeal with Almonds & Honey", "c": "350 kcal"},
+        {"t": "Lunch", "m": "Grilled Chicken with Brown Rice", "c": "500 kcal"},
+        {"t": "Snack", "m": "Greek Yogurt with Berries", "c": "150 kcal"},
+        {"t": "Dinner", "m": "Baked Salmon and Steamed Broccoli", "c": "400 kcal"}
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "meals": [
+        {"t": "Breakfast", "m": "Egg White Omelet & Whole Grain Toast", "c": "300 kcal"},
+        {"t": "Lunch", "m": "Quinoa Salad with Chickpeas", "c": "450 kcal"},
+        {"t": "Snack", "m": "Apple with Peanut Butter", "c": "200 kcal"},
+        {"t": "Dinner", "m": "Lean Beef Stir-fry with Veggies", "c": "550 kcal"}
+      ]
+    },
+    {
+      "day": "Wednesday",
+      "meals": [
+        {"t": "Breakfast", "m": "Protein Smoothie (Banana/Whey)", "c": "400 kcal"},
+        {"t": "Lunch", "m": "Turkey Wrap with Avocado", "c": "480 kcal"},
+        {"t": "Snack", "m": "Handful of Walnuts", "c": "180 kcal"},
+        {"t": "Dinner", "m": "Lentil Soup and Baked Potato", "c": "420 kcal"}
+      ]
+    },
+    {
+      "day": "Thursday",
+      "meals": [
+        {"t": "Breakfast", "m": "Cottage Cheese with Pineapple", "c": "250 kcal"},
+        {"t": "Lunch", "m": "Tuna Salad (No Mayo) & Crackers", "c": "400 kcal"},
+        {"t": "Snack", "m": "Protein Bar", "c": "220 kcal"},
+        {"t": "Dinner", "m": "Roasted Tofu and Asparagus", "c": "380 kcal"}
+      ]
+    },
+    {
+      "day": "Friday",
+      "meals": [
+        {"t": "Breakfast", "m": "Avocado Toast with Poached Egg", "c": "380 kcal"},
+        {"t": "Lunch", "m": "Whole Wheat Pasta with Marinara", "c": "520 kcal"},
+        {"t": "Snack", "m": "Carrots and Hummus", "c": "120 kcal"},
+        {"t": "Dinner", "m": "Grilled Shrimp and Quinoa", "c": "410 kcal"}
+      ]
+    },
+    {
+      "day": "Saturday",
+      "meals": [
+        {"t": "Breakfast", "m": "Buckwheat Pancakes & Blueberries", "c": "420 kcal"},
+        {"t": "Lunch", "m": "Grilled Steak and Sweet Potato", "c": "600 kcal"},
+        {"t": "Snack", "m": "Boiled Eggs (2)", "c": "140 kcal"},
+        {"t": "Dinner", "m": "Mixed Vegetable Curry (Low Oil)", "c": "350 kcal"}
+      ]
+    },
+    {
+      "day": "Sunday",
+      "meals": [
+        {"t": "Breakfast", "m": "Chia Seed Pudding", "c": "310 kcal"},
+        {"t": "Lunch", "m": "Roasted Chicken Thighs & Kale", "c": "550 kcal"},
+        {"t": "Snack", "m": "Protein Shake", "c": "150 kcal"},
+        {"t": "Dinner", "m": "White Fish Fillet and Spinach", "c": "320 kcal"}
+      ]
+    }
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 7,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("7-DAY ELITE DIET"),
+          bottom: const TabBar(
+            isScrollable: true,
+            indicatorColor: Colors.redAccent,
+            tabs: [Tab(text: "Mon"), Tab(text: "Tue"), Tab(text: "Wed"), Tab(text: "Thu"), Tab(text: "Fri"), Tab(text: "Sat"), Tab(text: "Sun")],
+          ),
+        ),
+        body: TabBarView(
+          children: fullMealPlan.map((dayData) {
+            return ListView.builder(
+              padding: const EdgeInsets.all(15),
+              itemCount: dayData['meals'].length,
+              itemBuilder: (ctx, i) {
+                final meal = dayData['meals'][i];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: CircleAvatar(backgroundColor: Colors.blueGrey, child: Text("${i+1}")),
+                    title: Text(meal['t'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                    subtitle: Text(meal['m']),
+                    trailing: Text(meal['c'], style: const TextStyle(color: Colors.greenAccent)),
+                  ),
+                );
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+// --- 9. 7-DAY WORKOUT SCHEDULER (NEW FEATURE) ---
+class WeeklyWorkoutPage extends StatelessWidget {
+  const WeeklyWorkoutPage({super.key});
+
+  static const List<Map<String, dynamic>> workoutPlan = [
+    {
+      "day": "Monday",
+      "focus": "Push Day (Chest/Shoulders)",
+      "sessions": [
+        {"t": "07:00 AM", "n": "Fasted Cardio", "d": "20 mins", "c": "150 kcal"},
+        {"t": "05:30 PM", "n": "Heavy Bench & Overhead Press", "d": "60 mins", "c": "450 kcal"},
+        {"t": "09:00 PM", "n": "Mobility Stretching", "d": "15 mins", "c": "40 kcal"}
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "focus": "Pull Day (Back/Biceps)",
+      "sessions": [
+        {"t": "06:30 AM", "n": "Yoga Flow", "d": "30 mins", "c": "120 kcal"},
+        {"t": "06:00 PM", "n": "Deadlifts & Pull-ups", "d": "55 mins", "c": "400 kcal"},
+        {"t": "10:00 PM", "n": "Deep Breathing", "d": "10 mins", "c": "20 kcal"}
+      ]
+    },
+    {
+      "day": "Wednesday",
+      "focus": "Leg Day (Quads/Hams)",
+      "sessions": [
+        {"t": "07:00 AM", "n": "Core Activation", "d": "15 mins", "c": "80 kcal"},
+        {"t": "05:00 PM", "n": "Squats & Lunges", "d": "70 mins", "c": "550 kcal"},
+        {"t": "09:30 PM", "n": "Foam Rolling", "d": "20 mins", "c": "50 kcal"}
+      ]
+    },
+    {
+      "day": "Thursday",
+      "focus": "Active Recovery",
+      "sessions": [
+        {"t": "08:00 AM", "n": "Steady State Walk", "d": "45 mins", "c": "200 kcal"},
+        {"t": "04:00 PM", "n": "Swimming", "d": "30 mins", "c": "300 kcal"},
+        {"t": "08:00 PM", "n": "Joint Decompression", "d": "15 mins", "c": "30 kcal"}
+      ]
+    },
+    {
+      "day": "Friday",
+      "focus": "Full Body HIIT",
+      "sessions": [
+        {"t": "07:00 AM", "n": "Burpee Challenge", "d": "15 mins", "c": "200 kcal"},
+        {"t": "05:30 PM", "n": "Circuit Training", "d": "50 mins", "c": "500 kcal"},
+        {"t": "09:00 PM", "n": "Static Stretching", "d": "15 mins", "c": "40 kcal"}
+      ]
+    },
+    {
+      "day": "Saturday",
+      "focus": "Strength & Power",
+      "sessions": [
+        {"t": "09:00 AM", "n": "Clean & Jerks", "d": "60 mins", "c": "480 kcal"},
+        {"t": "03:00 PM", "n": "Outdoor Trail Run", "d": "40 mins", "c": "400 kcal"},
+        {"t": "09:00 PM", "n": "Massage Gun Session", "d": "15 mins", "c": "20 kcal"}
+      ]
+    },
+    {
+      "day": "Sunday",
+      "focus": "Rest & Recharge",
+      "sessions": [
+        {"t": "10:00 AM", "n": "Light Sun Salutation", "d": "20 mins", "c": "60 kcal"},
+        {"t": "02:00 PM", "n": "Nature Walk", "d": "60 mins", "c": "250 kcal"},
+        {"t": "08:00 PM", "n": "Sleep Meditation", "d": "20 mins", "c": "15 kcal"}
+      ]
+    }
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 7,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("7-DAY WORKOUT ELITE"),
+          bottom: const TabBar(
+            isScrollable: true,
+            tabs: [Tab(text: "Mon"), Tab(text: "Tue"), Tab(text: "Wed"), Tab(text: "Thu"), Tab(text: "Fri"), Tab(text: "Sat"), Tab(text: "Sun")],
+          ),
+        ),
+        body: TabBarView(
+          children: workoutPlan.map((dayData) {
+            return Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  color: Colors.redAccent.withOpacity(0.1),
+                  child: Text("FOCUS: ${dayData['focus']}", 
+                    style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.redAccent)),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(15),
+                    itemCount: dayData['sessions'].length,
+                    itemBuilder: (ctx, i) {
+                      final session = dayData['sessions'][i];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.white10)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(session['t'], style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                                    child: Text("Est: ${session['c']}", style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(session['n'], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                              Text("Duration: ${session['d']}", style: const TextStyle(color: Colors.white54)),
+                              const SizedBox(height: 15),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text("Starting ${session['n']}..."), backgroundColor: Colors.redAccent)
+                                    );
+                                  },
+                                  icon: const Icon(Icons.play_arrow_rounded),
+                                  label: const Text("START WORKOUT"),
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white10, foregroundColor: Colors.white),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+class CoachContactsPage extends StatelessWidget {
+  const CoachContactsPage({super.key});
+
+  final List<Map<String, String>> coaches = const [
+    {"name": "Coach Alex (Strength)", "phone": "+1 234 567 8901"},
+    {"name": "Coach Sarah (Yoga)", "phone": "+1 234 567 8902"},
+    {"name": "Coach Mike (HIIT)", "phone": "+1 234 567 8903"},
+    {"name": "Coach Elena (Diet)", "phone": "+1 234 567 8904"},
+    {"name": "Coach David (Cardio)", "phone": "+1 234 567 8905"},
+    {"name": "Coach Priya (Zumba)", "phone": "+1 234 567 8906"},
+    {"name": "Coach Chris (Crossfit)", "phone": "+1 234 567 8907"},
+    {"name": "Coach Jessica (Pilates)", "phone": "+1 234 567 8908"},
+    {"name": "Coach Ryan (Boxing)", "phone": "+1 234 567 8909"},
+    {"name": "Coach Lisa (Recovery)", "phone": "+1 234 567 8910"},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("EXPERT COACHES")),
+      body: ListView.builder(
+        itemCount: coaches.length,
+        padding: const EdgeInsets.all(10),
+        itemBuilder: (context, index) {
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.redAccent,
+                child: Text(coaches[index]['name']![6], // Gets first letter of name
+                    style: const TextStyle(color: Colors.white)),
+              ),
+              title: Text(coaches[index]['name']!, 
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(coaches[index]['phone']!),
+              trailing: IconButton(
+                icon: const Icon(Icons.call, color: Colors.greenAccent),
+                onPressed: () {
+                  // Logic to trigger a real call can be added here
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Calling ${coaches[index]['name']}..."))
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+//leaderboard page 
+class LeaderboardPage extends StatelessWidget {
+  const LeaderboardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // List of 20 professional names for the leaderboard
+    final List<String> members = [
+      "Charith kumar", "Sujan", "Vignesh", "Ajay", "Vijay",
+      "Rohit", "Snehith", "Abhinav sai", "Adithya", "M. Vijay",
+      "Petal","Praneeth" , "Ganesh", "Roshan", "Nikhil",
+      "Rahul .P", "sannith", "Sai Raja", "Arun", "Bharath"
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("ELITE LEADERBOARD")),
+      body: ListView.builder(
+        itemCount: members.length,
+        padding: const EdgeInsets.all(15),
+        itemBuilder: (context, index) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            color: index < 3 ? Colors.redAccent.withOpacity(0.1) : null, // Highlight top 3
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: index == 0 ? Colors.amber : (index == 1 ? Colors.grey : (index == 2 ? Colors.brown : Colors.blueGrey)),
+                child: Text("${index + 1}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+              title: Text(members[index], style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text("${2500 - (index * 100)} XP Points"),
+              trailing: IconButton(
+                icon: const Icon(Icons.person_add_alt_1, color: Colors.blueAccent),
+                onPressed: () => _showFriendRequest(context, members[index]),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showFriendRequest(BuildContext context, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add Friend"),
+        content: Text("Do you want to send a friend request to $name?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Request sent to $name!")));
+            }, 
+            child: const Text("SEND REQUEST")
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- 6. SHOP (20 PRODUCTS) ---
+class ShopPage extends StatelessWidget {
+  final Function(Map<String, dynamic>) onAddToCart;
+  ShopPage({super.key, required this.onAddToCart});
+
+  final List<Map<String, dynamic>> products = [
+    {"n": "Gold Whey Protein (2kg)", "p": 5400, "cat": "Supplements"},
+    {"n": "Micronized Creatine", "p": 1200, "cat": "Supplements"},
+    {"n": "Eco-Grip Yoga Mat", "p": 2500, "cat": "Equipment"},
+    {"n": "Adjustable Dumbbells (Pair)", "p": 8500, "cat": "Equipment"},
+    {"n": "Organic Peanut Butter", "p": 450, "cat": "Nutrition"},
+    {"n": "BCAA Energy Blast", "p": 1800, "cat": "Supplements"},
+    {"n": "Steel Shaker Bottle", "p": 850, "cat": "Accessories"},
+    {"n": "Speed Skipping Rope", "p": 600, "cat": "Equipment"},
+    {"n": "Liquid Chalk (200ml)", "p": 400, "cat": "Accessories"},
+    {"n": "Resistance Band Set", "p": 1500, "cat": "Equipment"},
+    {"n": "ZMA Recovery Caps", "p": 950, "cat": "Supplements"},
+    {"n": "FitIntel Gym Bag", "p": 3200, "cat": "Accessories"},
+    {"n": "Weightlifting Belt", "p": 2200, "cat": "Equipment"},
+    {"n": "Pre-Workout Ignition", "p": 2400, "cat": "Supplements"},
+    {"n": "Kettlebell (12kg)", "p": 3000, "cat": "Equipment"},
+    {"n": "Foam Roller (Deep Tissue)", "p": 1400, "cat": "Equipment"},
+    {"n": "Multivitamin Complex", "p": 750, "cat": "Supplements"},
+    {"n": "Wrist Wraps (Pair)", "p": 550, "cat": "Accessories"},
+    {"n": "Casein Protein (Night)", "p": 3100, "cat": "Supplements"},
+    {"n": "Pulse Heart Rate Strap", "p": 4500, "cat": "Electronics"},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("PREMIUM STORE")),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(15),
+        itemCount: products.length,
+        separatorBuilder: (c, i) => const Divider(color: Colors.white10),
+        itemBuilder: (c, i) {
+          final item = products[i];
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            title: Text(item['n'], style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(item['cat'], style: const TextStyle(color: Colors.white54)),
+            trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text("₹${item['p']}", style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 5),
+              InkWell(
+                onTap: () {
+                  onAddToCart(item);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${item['n']} added!"), duration: const Duration(seconds: 1)));
+                },
+                child: const Icon(Icons.add_shopping_cart, color: Colors.redAccent),
+              )
+            ]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// --- 7. CART & RECEIPT ---
+class CartPage extends StatefulWidget {
+  final List<Map<String, dynamic>> cart;
+  final Function(String) onPay;
+  const CartPage({super.key, required this.cart, required this.onPay});
+  @override
+  _CartPageState createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  String _paymentMode = "UPI";
+
+  @override
+  Widget build(BuildContext context) {
+    int subtotal = widget.cart.fold(0, (sum, item) => sum + (item['p'] as int));
+    int tax = (subtotal * 0.18).toInt();
+    int grandTotal = subtotal + tax;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("SHOPPING CART")),
+      body: widget.cart.isEmpty 
+        ? const Center(child: Text("Your cart is empty!"))
+        : Column(children: [
+            Expanded(child: ListView.builder(
+              itemCount: widget.cart.length,
+              itemBuilder: (c, i) => ListTile(title: Text(widget.cart[i]['n']), trailing: Text("₹${widget.cart[i]['p']}"))
+            )),
+            Container(
+              padding: const EdgeInsets.all(25),
+              decoration: const BoxDecoration(color: Color(0xFF1E293B), borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+              child: Column(children: [
+                _receiptRow("Subtotal", "₹$subtotal"),
+                _receiptRow("GST (18%)", "₹$tax"),
+                const Divider(),
+                _receiptRow("GRAND TOTAL", "₹$grandTotal", isBold: true),
+                const SizedBox(height: 20),
+                DropdownButton<String>(
+                  isExpanded: true, value: _paymentMode,
+                  items: ["UPI", "Credit Card", "Net Banking", "Cash on Delivery"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  onChanged: (v) => setState(() => _paymentMode = v!),
+                ),
+                const SizedBox(height: 15),
+                SizedBox(width: double.infinity, child: ElevatedButton(
+                  onPressed: () => _showInvoice(grandTotal), 
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  child: const Text("PROCEED TO PAY")
+                )),
+              ]),
+            )
+          ]),
+    );
+  }
+
+  Widget _receiptRow(String l, String v, {bool isBold = false}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(l, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+      Text(v, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: isBold ? Colors.greenAccent : Colors.white)),
+    ]),
+  );
+
+  void _showInvoice(int total) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text("DIGITAL INVOICE"),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text("FIT-INV-2026-001"),
+        const Divider(),
+        ...widget.cart.map((e) => Text("${e['n']} - ₹${e['p']}")),
+        const Divider(),
+        Text("Total Paid: ₹$total", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+      ]),
+      actions: [TextButton(onPressed: () { Navigator.pop(ctx); widget.onPay(_paymentMode); }, child: const Text("CONFIRM"))],
+    ));
+  }
+}
+
+// --- 8. ORDER TRACKING (PAST & PRESENT WITH TRANSACTION STATUS) ---
+class OrdersPage extends StatelessWidget {
+  final List<Map<String, dynamic>> orders;
+  const OrdersPage({super.key, required this.orders});
+
+  @override
+  Widget build(BuildContext context) {
+    final activeOrders = orders.where((o) => o['prog'] < 1.0).toList();
+    final pastOrders = orders.where((o) => o['prog'] >= 1.0).toList();
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("MY TRANSACTIONS"),
+          bottom: const TabBar(
+            tabs: [Tab(text: "ACTIVE"), Tab(text: "HISTORY")],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildOrderList(activeOrders, true),
+            _buildOrderList(pastOrders, false),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderList(List<Map<String, dynamic>> list, bool isActive) {
+    if (list.isEmpty) return const Center(child: Text("No records found."));
+    return ListView.builder(
+      padding: const EdgeInsets.all(15),
+      itemCount: list.length,
+      itemBuilder: (c, i) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ListTile(
+            title: Text(list[i]['n'], style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const SizedBox(height: 5),
+              Text("Date: ${list[i]['date'] ?? 'Today'}"),
+              Text("Payment: ${list[i]['mode'] ?? 'Online'}"),
+              const SizedBox(height: 8),
+              Row(children: [
+                const Text("Status: "),
+                Text(list[i]['status'] ?? "Unknown", 
+                  style: TextStyle(color: _getStatusColor(list[i]['status']), fontWeight: FontWeight.bold)),
+              ]),
+              if (isActive) ...[
+                const SizedBox(height: 10),
+                LinearProgressIndicator(value: list[i]['prog']),
+              ]
+            ]),
+            trailing: Icon(
+              isActive ? Icons.local_shipping : Icons.check_circle, 
+              color: isActive ? Colors.blue : Colors.green
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status) {
+      case "Delivered": return Colors.greenAccent;
+      case "Shipped": return Colors.blueAccent;
+      case "Processing": return Colors.orangeAccent;
+      default: return Colors.white54;
+    }
+  }
+}
